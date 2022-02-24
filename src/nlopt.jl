@@ -101,7 +101,7 @@ function get_nlopt_problem(alg, obj, ineq_constr, eq_constr, x0, xlb, xub)
         eqconstrval, eqconstrjac = nothing, nothing
     end
 
-    function update_cached_values(x, updategrad = true)
+    function update_cached_values(x, updategrad = !contains(string(alg), "LN"))
         lastx = copy(x)
         if updategrad
             objval, objpb = Zygote.pullback(obj, lastx)
