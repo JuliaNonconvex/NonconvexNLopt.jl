@@ -196,9 +196,6 @@ function get_nlopt_problem(algorithm, local_optimizer, options, obj, ineq_constr
     problem = NLopt.Opt(algorithm, length(x0))
     if local_optimizer !== nothing
         subproblem = NLopt.Opt(local_optimizer, length(x0))
-        subproblem.lower_bounds = xlb
-        subproblem.upper_bounds = xub
-        subproblem.min_objective = nlopt_obj
         foreach(keys(options.nt.suboptions.nt)) do _k
             setproperty!(subproblem, _k, options.nt.suboptions.nt[_k])
         end
