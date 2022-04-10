@@ -13,8 +13,24 @@ options = NLoptOptions(xtol_rel = 1e-4)
 
     alg = NLoptAlg(:LD_MMA)
     r = NonconvexCore.optimize(m, alg, [1.234, 2.345], options = options)
+    @info "Status: $(r.status)"
     @test abs(r.minimum - sqrt(8/27)) < 1e-6
     @test norm(r.minimizer - [1/3, 8/27]) < 1e-6
+end
+
+@testset "Nested solvers" begin
+    m = Model(x -> (sqrt(x[2]) + x[1]^2))
+    addvar!(m, [0.0, 0.0], [10.0, 10.0])
+    for alg in [
+        NLoptAlg(:AUGLAG, :LD_LBFGS),
+        NLoptAlg(:G_MLSL_LDS, :LD_LBFGS),
+        NLoptAlg(:AUGLAG, :LD_SLSQP),
+        NLoptAlg(:G_MLSL_LDS, :LD_SLSQP),
+    ]
+        r = NonconvexCore.optimize(m, alg, [0.1, 0.2]; options)
+        @info "Status: $(r.status)"
+        @test r.status == :FAILURE || abs(r.minimum - 0) < 1e-6  && norm(r.minimizer .- 0) < 1e-6
+    end
 end
 
 @testset "Equality constraints" begin
@@ -26,6 +42,7 @@ end
 
     alg = NLoptAlg(:LD_SLSQP)
     r = NonconvexCore.optimize(m, alg, [1.234, 2.345], options = options)
+    @info "Status: $(r.status)"
     @test abs(r.minimum - sqrt(8/27)) < 1e-6
     @test norm(r.minimizer - [1/3, 8/27]) < 1e-6
 end
@@ -37,6 +54,7 @@ end
 
     alg = NLoptAlg(:LD_MMA)
     r = NonconvexCore.optimize(m, alg, [1.234, 2.345], options = options)
+    @info "Status: $(r.status)"
     @test abs(r.minimum - sqrt(8/27)) < 1e-6
     @test norm(r.minimizer - [1/3, 8/27]) < 1e-6
 end
@@ -50,6 +68,7 @@ end
 
         alg = NLoptAlg(:LD_MMA)
         r = NonconvexCore.optimize(m, alg, [1.234, 2.345], options = options)
+        @info "Status: $(r.status)"
         @test abs(r.minimum - sqrt(8/27)) < 1e-6
         @test norm(r.minimizer - [1/3, 8/27]) < 1e-6
     end
@@ -61,6 +80,7 @@ end
 
         alg = NLoptAlg(:LD_MMA)
         r = NonconvexCore.optimize(m, alg, [1.234, 2.345], options = options)
+        @info "Status: $(r.status)"
         @test abs(r.minimum - sqrt(8/27)) < 1e-6
         @test norm(r.minimizer - [1/3, 8/27]) < 1e-6
     end
@@ -72,6 +92,7 @@ end
 
         alg = NLoptAlg(:LD_MMA)
         r = NonconvexCore.optimize(m, alg, [1.234, 2.345], options = options)
+        @info "Status: $(r.status)"
         @test abs(r.minimum - sqrt(8/27)) < 1e-6
         @test norm(r.minimizer - [1/3, 8/27]) < 1e-6
     end
