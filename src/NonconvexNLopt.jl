@@ -197,7 +197,9 @@ function get_nlopt_problem(algorithm, local_optimizer, options, obj, ineq_constr
     if local_optimizer !== nothing
         subproblem = NLopt.Opt(local_optimizer, length(x0))
         foreach(keys(options.nt.suboptions.nt)) do _k
-            setproperty!(subproblem, _k, options.nt.suboptions.nt[_k])
+            if _k !== :suboptions
+                setproperty!(subproblem, _k, options.nt.suboptions.nt[_k])
+            end
         end
         NLopt.local_optimizer!(problem, subproblem)
     end
