@@ -1,7 +1,7 @@
 using NonconvexNLopt, LinearAlgebra, Test
 
 f(x::AbstractVector) = x[2] >= 0 ? sqrt(x[2]) : Inf
-g(x::AbstractVector, a, b) = (a*x[1] + b)^3 - x[2]
+g(x::AbstractVector, a, b) = (a * x[1] + b)^3 - x[2]
 
 options = NLoptOptions(xtol_rel = 1e-4)
 
@@ -14,8 +14,8 @@ options = NLoptOptions(xtol_rel = 1e-4)
     alg = NLoptAlg(:LD_MMA)
     r = NonconvexCore.optimize(m, alg, [1.234, 2.345], options = options)
     @info "Status: $(r.status)"
-    @test abs(r.minimum - sqrt(8/27)) < 1e-6
-    @test norm(r.minimizer - [1/3, 8/27]) < 1e-6
+    @test abs(r.minimum - sqrt(8 / 27)) < 1e-6
+    @test norm(r.minimizer - [1 / 3, 8 / 27]) < 1e-6
 end
 
 @testset "Nested solvers" begin
@@ -29,7 +29,8 @@ end
     ]
         r = NonconvexCore.optimize(m, alg, [0.1, 0.2]; options)
         @info "Status: $(r.status)"
-        @test r.status == :FAILURE || abs(r.minimum - 0) < 1e-6  && norm(r.minimizer .- 0) < 1e-6
+        @test r.status == :FAILURE ||
+              abs(r.minimum - 0) < 1e-6 && norm(r.minimizer .- 0) < 1e-6
     end
 end
 
@@ -38,13 +39,13 @@ end
     addvar!(m, [0.0, 0.0], [10.0, 10.0])
     add_ineq_constraint!(m, x -> g(x, 2, 0))
     add_ineq_constraint!(m, x -> g(x, -1, 1))
-    add_eq_constraint!(m, x -> sum(x) - 1/3 - 8/27)
+    add_eq_constraint!(m, x -> sum(x) - 1 / 3 - 8 / 27)
 
     alg = NLoptAlg(:LD_SLSQP)
     r = NonconvexCore.optimize(m, alg, [1.234, 2.345], options = options)
     @info "Status: $(r.status)"
-    @test abs(r.minimum - sqrt(8/27)) < 1e-6
-    @test norm(r.minimizer - [1/3, 8/27]) < 1e-6
+    @test abs(r.minimum - sqrt(8 / 27)) < 1e-6
+    @test norm(r.minimizer - [1 / 3, 8 / 27]) < 1e-6
 end
 
 @testset "Block constraints" begin
@@ -55,8 +56,8 @@ end
     alg = NLoptAlg(:LD_MMA)
     r = NonconvexCore.optimize(m, alg, [1.234, 2.345], options = options)
     @info "Status: $(r.status)"
-    @test abs(r.minimum - sqrt(8/27)) < 1e-6
-    @test norm(r.minimizer - [1/3, 8/27]) < 1e-6
+    @test abs(r.minimum - sqrt(8 / 27)) < 1e-6
+    @test norm(r.minimizer - [1 / 3, 8 / 27]) < 1e-6
 end
 
 @testset "Infinite bounds" begin
@@ -69,8 +70,8 @@ end
         alg = NLoptAlg(:LD_MMA)
         r = NonconvexCore.optimize(m, alg, [1.234, 2.345], options = options)
         @info "Status: $(r.status)"
-        @test abs(r.minimum - sqrt(8/27)) < 1e-6
-        @test norm(r.minimizer - [1/3, 8/27]) < 1e-6
+        @test abs(r.minimum - sqrt(8 / 27)) < 1e-6
+        @test norm(r.minimizer - [1 / 3, 8 / 27]) < 1e-6
     end
     @testset "Infinite lower bound" begin
         m = Model(f)
@@ -81,8 +82,8 @@ end
         alg = NLoptAlg(:LD_MMA)
         r = NonconvexCore.optimize(m, alg, [1.234, 2.345], options = options)
         @info "Status: $(r.status)"
-        @test abs(r.minimum - sqrt(8/27)) < 1e-6
-        @test norm(r.minimizer - [1/3, 8/27]) < 1e-6
+        @test abs(r.minimum - sqrt(8 / 27)) < 1e-6
+        @test norm(r.minimizer - [1 / 3, 8 / 27]) < 1e-6
     end
     @testset "Infinite upper and lower bound" begin
         m = Model(f)
@@ -93,7 +94,7 @@ end
         alg = NLoptAlg(:LD_MMA)
         r = NonconvexCore.optimize(m, alg, [1.234, 2.345], options = options)
         @info "Status: $(r.status)"
-        @test abs(r.minimum - sqrt(8/27)) < 1e-6
-        @test norm(r.minimizer - [1/3, 8/27]) < 1e-6
+        @test abs(r.minimum - sqrt(8 / 27)) < 1e-6
+        @test norm(r.minimizer - [1 / 3, 8 / 27]) < 1e-6
     end
 end

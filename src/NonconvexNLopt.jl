@@ -9,7 +9,7 @@ using NonconvexCore: AbstractOptimizer, CountingFunction
 import NonconvexCore: optimize!, Workspace
 import NLopt
 
-struct NLoptAlg{L <: Union{Symbol, Nothing}} <: AbstractOptimizer
+struct NLoptAlg{L<:Union{Symbol,Nothing}} <: AbstractOptimizer
     algorithm::Symbol
     local_optimizer::L
 end
@@ -53,36 +53,44 @@ function NLoptOptions(;
 )
     NLoptOptions(
         merge(
-            (; suboptions,),
+            (; suboptions),
             NamedTuple(kwargs),
             (; ftol_rel, ftol_abs, xtol_rel, xtol_abs),
-        )
+        ),
     )
 end
 
 @params mutable struct NLoptWorkspace <: Workspace
     model::VecModel
-    problem
+    problem::Any
     x0::AbstractVector
     options::NLoptOptions
     alg::NLoptAlg
     counter::Base.RefValue{Int}
 end
 function NLoptWorkspace(
-    model::VecModel, optimizer::NLoptAlg,
+    model::VecModel,
+    optimizer::NLoptAlg,
     x0::AbstractVector = getinit(model);
-    options = NLoptOptions(), kwargs...,
+    options = NLoptOptions(),
+    kwargs...,
 )
-    problem, counter = get_nlopt_problem(optimizer.algorithm, optimizer.local_optimizer, options,  model, copy(x0))
+    problem, counter = get_nlopt_problem(
+        optimizer.algorithm,
+        optimizer.local_optimizer,
+        options,
+        model,
+        copy(x0),
+    )
     return NLoptWorkspace(model, problem, copy(x0), options, optimizer, counter)
 end
 @params struct NLoptResult <: AbstractResult
-    minimizer
-    minimum
-    problem
-    status
-    alg
-    options
+    minimizer::Any
+    minimum::Any
+    problem::Any
+    status::Any
+    alg::Any
+    options::Any
     fcalls::Int
 end
 
@@ -90,16 +98,20 @@ function optimize!(workspace::NLoptWorkspace)
     @unpack problem, options, x0, counter = workspace
     counter[] = 0
     minf, minx, ret = NLopt.optimize(problem, x0)
-    return NLoptResult(
-        copy(minx), minf, problem, ret, workspace.alg, options, counter[],
-    )
+    return NLoptResult(copy(minx), minf, problem, ret, workspace.alg, options, counter[])
 end
 
-function Workspace(model::VecModel, optimizer::NLoptAlg, args...; kwargs...,)
+function Workspace(model::VecModel, optimizer::NLoptAlg, args...; kwargs...)
     return NLoptWorkspace(model, optimizer, args...; kwargs...)
 end
 
-function get_nlopt_problem(algorithm, local_optimizer, options, model::VecModel, x0::AbstractVector)
+function get_nlopt_problem(
+    algorithm,
+    local_optimizer,
+    options,
+    model::VecModel,
+    x0::AbstractVector,
+)
     eq = if length(model.eq_constraints.fs) == 0
         nothing
     else
@@ -121,10 +133,21 @@ function get_nlopt_problem(algorithm, local_optimizer, options, model::VecModel,
         x0,
         getmin(model),
         getmax(model),
-    ), obj.counter
+    ),
+    obj.counter
 end
-function get_nlopt_problem(algorithm, local_optimizer, options, obj, ineq_constr, eq_constr, x0, xlb, xub)
-    onehot(n, i) = [zeros(i-1); 1.0; zeros(n-i)]
+function get_nlopt_problem(
+    algorithm,
+    local_optimizer,
+    options,
+    obj,
+    ineq_constr,
+    eq_constr,
+    x0,
+    xlb,
+    xub,
+)
+    onehot(n, i) = [zeros(i - 1); 1.0; zeros(n - i)]
     local lastx, objval, objgrad
     local ineqconstrval, ineqconstrjac
     if ineq_constr !== nothing
@@ -145,9 +168,7 @@ function get_nlopt_problem(algorithm, local_optimizer, options, obj, ineq_constr
         end
         if ineq_constr !== nothing
             if updategrad
-                ineqconstrval, ineqconstrpb = Zygote.pullback(
-                    ineq_constr, lastx,
-                )
+                ineqconstrval, ineqconstrpb = Zygote.pullback(ineq_constr, lastx)
                 ineqconstrjac = mapreduce(vcat, 1:length(ineqconstrval)) do i
                     ineqconstrpb(onehot(length(ineqconstrval), i))[1]'
                 end
@@ -157,9 +178,7 @@ function get_nlopt_problem(algorithm, local_optimizer, options, obj, ineq_constr
         end
         if eq_constr !== nothing
             if updategrad
-                eqconstrval, eqconstrpb = Zygote.pullback(
-                    eq_constr, lastx,
-                )
+                eqconstrval, eqconstrpb = Zygote.pullback(eq_constr, lastx)
                 eqconstrjac = mapreduce(vcat, 1:length(eqconstrval)) do i
                     eqconstrpb(onehot(length(eqconstrval), i))[1]'
                 end
@@ -238,17 +257,13 @@ function get_nlopt_problem(algorithm, local_optimizer, options, obj, ineq_constr
     end
 
     if ineq_constr !== nothing
-        for i in 1:length(ineqconstrval)
-            NLopt.inequality_constraint!(
-                problem, nlopt_ineqconstr_gen(i), 0.0,
-            )
+        for i = 1:length(ineqconstrval)
+            NLopt.inequality_constraint!(problem, nlopt_ineqconstr_gen(i), 0.0)
         end
     end
     if eq_constr !== nothing
-        for i in 1:length(eqconstrval)
-            NLopt.equality_constraint!(
-                problem, nlopt_eqconstr_gen(i), 0.0,
-            )
+        for i = 1:length(eqconstrval)
+            NLopt.equality_constraint!(problem, nlopt_eqconstr_gen(i), 0.0)
         end
     end
 
