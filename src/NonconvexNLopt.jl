@@ -15,6 +15,31 @@ struct NLoptAlg{L <: Union{Symbol, Nothing}} <: AbstractOptimizer
 end
 NLoptAlg(alg) = NLoptAlg(alg, nothing)
 
+function is_zero_order(algorithm, ::Nothing)
+    return algorithm in (
+        :GN_DIRECT,
+        :GN_DIRECT_L,
+        :GNL_DIRECT_NOSCAL,
+        :GN_DIRECT_L_NOSCAL,
+        :GN_DIRECT_L_RAND_NOSCAL,
+        :GN_ORIG_DIRECT,
+        :GN_ORIG_DIRECT_L,
+        :GN_CRS2_LM,
+        :GN_AGS,
+        :GN_ESCH,
+        :LN_COBYLA,
+        :LN_BOBYQA,
+        :LN_NEWUOA,
+        :LN_NEWUOA_BOUND,
+        :LN_PRAXIS,
+        :LN_NELDERMEAD,
+        :LN_SBPLX,
+    )
+end
+function is_zero_order(::Any, local_optimizer)
+    return is_zero_order(local_optimizer, nothing)
+end
+
 @params struct NLoptOptions
     nt::NamedTuple
 end
@@ -143,7 +168,7 @@ function get_nlopt_problem(algorithm, local_optimizer, options, obj, ineq_constr
             end
         end
     end
-    update_cached_values(x0)
+    update_cached_values(x0, !is_zero_order(algorithm, local_optimizer))
 
     function nlopt_obj(x, grad)
         if x == lastx

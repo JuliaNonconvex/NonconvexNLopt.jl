@@ -1,6 +1,6 @@
 using NonconvexNLopt, LinearAlgebra, Test
 
-f(x::AbstractVector) = sqrt(x[2])
+f(x::AbstractVector) = x[2] >= 0 ? sqrt(x[2]) : Inf
 g(x::AbstractVector, a, b) = (a*x[1] + b)^3 - x[2]
 
 options = NLoptOptions(xtol_rel = 1e-4)
