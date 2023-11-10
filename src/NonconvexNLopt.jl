@@ -4,44 +4,112 @@ export NLoptAlg, NLoptOptions
 
 using Reexport, Parameters, SparseArrays, Zygote
 @reexport using NonconvexCore
-using NonconvexCore: @params, VecModel, AbstractResult
+using NonconvexCore: VecModel, AbstractResult
 using NonconvexCore: AbstractOptimizer, CountingFunction
 import NonconvexCore: optimize!, Workspace
 import NLopt
+import StringDistances
 
-struct NLoptAlg{L<:Union{Symbol,Nothing}} <: AbstractOptimizer
-    algorithm::Symbol
-    local_optimizer::L
-end
-NLoptAlg(alg) = NLoptAlg(alg, nothing)
+const META_ALGORITHMS = (:G_MLSL, :G_MLSL_LDS, :AUGLAG, :AUGLAG_EQ)
+
+const ZERO_ORDER_ALGORITHMS = (
+    :GN_DIRECT,
+    :GN_DIRECT_L,
+    :GNL_DIRECT_NOSCAL,
+    :GN_DIRECT_L_NOSCAL,
+    :GN_DIRECT_L_RAND_NOSCAL,
+    :GN_ORIG_DIRECT,
+    :GN_ORIG_DIRECT_L,
+    :GN_CRS2_LM,
+    :GN_AGS,
+    :GN_ESCH,
+    :LN_COBYLA,
+    :LN_BOBYQA,
+    :LN_NEWUOA,
+    :LN_NEWUOA_BOUND,
+    :LN_PRAXIS,
+    :LN_NELDERMEAD,
+    :LN_SBPLX,
+)
+
+const FIRST_ORDER_ALGORITHMS = (
+    :GD_STOGO,
+    :GD_STOGO_RAND,
+    :LD_CCSAQ,
+    :LD_MMA,
+    :LD_SLSQP,
+    :LD_LBFGS,
+    :LD_TNEWTON,
+    :LD_TNEWTON_PRECOND,
+    :LD_TNEWTON_RESTART,
+    :LD_TNEWTON_PRECOND_RESTART,
+    :LD_VAR1,
+    :LD_VAR2,
+)
+
+const ALGORITHMS = (ZERO_ORDER_ALGORITHMS..., FIRST_ORDER_ALGORITHMS...)
+const ALL_ALGORITHMS = (META_ALGORITHMS..., ALGORITHMS...)
 
 function is_zero_order(algorithm, ::Nothing)
-    return algorithm in (
-        :GN_DIRECT,
-        :GN_DIRECT_L,
-        :GNL_DIRECT_NOSCAL,
-        :GN_DIRECT_L_NOSCAL,
-        :GN_DIRECT_L_RAND_NOSCAL,
-        :GN_ORIG_DIRECT,
-        :GN_ORIG_DIRECT_L,
-        :GN_CRS2_LM,
-        :GN_AGS,
-        :GN_ESCH,
-        :LN_COBYLA,
-        :LN_BOBYQA,
-        :LN_NEWUOA,
-        :LN_NEWUOA_BOUND,
-        :LN_PRAXIS,
-        :LN_NELDERMEAD,
-        :LN_SBPLX,
-    )
+    return algorithm in ZERO_ORDER_ALGORITHMS
 end
 function is_zero_order(::Any, local_optimizer)
     return is_zero_order(local_optimizer, nothing)
 end
 
-@params struct NLoptOptions
-    nt::NamedTuple
+function __check_alg(alg; loc = false)
+    valid = loc ? ALGORITHMS : ALL_ALGORITHMS
+    if !(alg in valid)
+        dists =
+            StringDistances.evaluate.(
+                Ref(StringDistances.Levenshtein()),
+                string(alg),
+                string.(valid),
+            )
+        val, ind = findmin(dists)
+        sim_alg = Symbol(valid[ind])
+        if val < 4
+            throw(
+                ArgumentError(
+                    "Algorithm $(Meta.quot(alg)) is not a valid algorithm. Did you mean $(Meta.quot(sim_alg))?",
+                ),
+            )
+        else
+            throw(
+                ArgumentError(
+                    "Algorithm $(Meta.quot(alg)) is not a valid algorithm. The valid algorithms are $valid.",
+                ),
+            )
+        end
+    end
+    return nothing
+end
+
+function _check_alg(alg, loc)
+    if alg in META_ALGORITHMS && loc === nothing
+        throw(
+            ArgumentError(
+                "A meta-algorithm $(Meta.quot(alg)) was input but no local optimizer was specified. Please specify a local algorithm using `NLoptAlg($(Meta.quot(alg)), local_algorithm)` where `local_optimizer` is one of the following algorithms: $(ALGORITHMS).",
+            ),
+        )
+    end
+    __check_alg(alg, loc = false)
+    loc === nothing || __check_alg(loc, loc = true)
+    return nothing
+end
+
+struct NLoptAlg{L<:Union{Symbol,Nothing}} <: AbstractOptimizer
+    algorithm::Symbol
+    local_optimizer::L
+    function NLoptAlg(alg::Symbol, loc::Union{Symbol,Nothing})
+        _check_alg(alg, loc)
+        return new{typeof(loc)}(alg, loc)
+    end
+end
+NLoptAlg(alg) = NLoptAlg(alg, nothing)
+
+struct NLoptOptions{N<:NamedTuple}
+    nt::N
 end
 function NLoptOptions(;
     ftol_rel = 1e-6,
@@ -60,12 +128,18 @@ function NLoptOptions(;
     )
 end
 
-@params mutable struct NLoptWorkspace <: Workspace
-    model::VecModel
-    problem::Any
-    x0::AbstractVector
-    options::NLoptOptions
-    alg::NLoptAlg
+mutable struct NLoptWorkspace{
+    M<:VecModel,
+    P,
+    X<:AbstractVector,
+    O<:NLoptOptions,
+    A<:NLoptAlg,
+} <: Workspace
+    model::M
+    problem::P
+    x0::X
+    options::O
+    alg::A
     counter::Base.RefValue{Int}
 end
 function NLoptWorkspace(
@@ -84,13 +158,13 @@ function NLoptWorkspace(
     )
     return NLoptWorkspace(model, problem, copy(x0), options, optimizer, counter)
 end
-@params struct NLoptResult <: AbstractResult
-    minimizer::Any
-    minimum::Any
-    problem::Any
-    status::Any
-    alg::Any
-    options::Any
+struct NLoptResult{M1,M2,P,S,A,O} <: AbstractResult
+    minimizer::M1
+    minimum::M2
+    problem::P
+    status::S
+    alg::A
+    options::O
     fcalls::Int
 end
 

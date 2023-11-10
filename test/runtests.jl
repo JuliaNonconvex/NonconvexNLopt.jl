@@ -1,5 +1,27 @@
 using NonconvexNLopt, LinearAlgebra, Test
 
+@testset "Algorithm names" begin
+    @test_throws ArgumentError(
+        "Algorithm :AU is not a valid algorithm. The valid algorithms are (:G_MLSL, :G_MLSL_LDS, :AUGLAG, :AUGLAG_EQ, :GN_DIRECT, :GN_DIRECT_L, :GNL_DIRECT_NOSCAL, :GN_DIRECT_L_NOSCAL, :GN_DIRECT_L_RAND_NOSCAL, :GN_ORIG_DIRECT, :GN_ORIG_DIRECT_L, :GN_CRS2_LM, :GN_AGS, :GN_ESCH, :LN_COBYLA, :LN_BOBYQA, :LN_NEWUOA, :LN_NEWUOA_BOUND, :LN_PRAXIS, :LN_NELDERMEAD, :LN_SBPLX, :GD_STOGO, :GD_STOGO_RAND, :LD_CCSAQ, :LD_MMA, :LD_SLSQP, :LD_LBFGS, :LD_TNEWTON, :LD_TNEWTON_PRECOND, :LD_TNEWTON_RESTART, :LD_TNEWTON_PRECOND_RESTART, :LD_VAR1, :LD_VAR2).",
+    ) NLoptAlg(:AU)
+
+    @test_throws ArgumentError(
+        "Algorithm :AUGLA is not a valid algorithm. Did you mean :AUGLAG?",
+    ) NLoptAlg(:AUGLA)
+
+    @test_throws ArgumentError(
+        "A meta-algorithm :AUGLAG was input but no local optimizer was specified. Please specify a local algorithm using `NLoptAlg(:AUGLAG, local_algorithm)` where `local_optimizer` is one of the following algorithms: (:GN_DIRECT, :GN_DIRECT_L, :GNL_DIRECT_NOSCAL, :GN_DIRECT_L_NOSCAL, :GN_DIRECT_L_RAND_NOSCAL, :GN_ORIG_DIRECT, :GN_ORIG_DIRECT_L, :GN_CRS2_LM, :GN_AGS, :GN_ESCH, :LN_COBYLA, :LN_BOBYQA, :LN_NEWUOA, :LN_NEWUOA_BOUND, :LN_PRAXIS, :LN_NELDERMEAD, :LN_SBPLX, :GD_STOGO, :GD_STOGO_RAND, :LD_CCSAQ, :LD_MMA, :LD_SLSQP, :LD_LBFGS, :LD_TNEWTON, :LD_TNEWTON_PRECOND, :LD_TNEWTON_RESTART, :LD_TNEWTON_PRECOND_RESTART, :LD_VAR1, :LD_VAR2).",
+    ) NLoptAlg(:AUGLAG)
+
+    @test_throws ArgumentError(
+        "Algorithm :AUGLA is not a valid algorithm. Did you mean :AUGLAG?",
+    ) NLoptAlg(:AUGLA, :LD_TNEWTON_PRECON)
+
+    @test_throws ArgumentError(
+        "Algorithm :LD_TNEWTON_PRECON is not a valid algorithm. Did you mean :LD_TNEWTON_PRECOND?",
+    ) NLoptAlg(:AUGLAG, :LD_TNEWTON_PRECON)
+end
+
 f(x::AbstractVector) = x[2] >= 0 ? sqrt(x[2]) : Inf
 g(x::AbstractVector, a, b) = (a * x[1] + b)^3 - x[2]
 
