@@ -1,6 +1,6 @@
 name = "NonconvexNLopt"
 uuid = "b43a31b8-ff9b-442d-8e31-c163daa8ab75"
-authors = ["Mohamed Tarek <mohamed82008@gmail.com> and contributors"]
+authors = ["Mohamed Tarek <mohdibntarek@gmail.com> and contributors"]
 version = "0.1.9"
 
 [deps]
