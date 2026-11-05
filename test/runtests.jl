@@ -56,6 +56,23 @@ end
     end
 end
 
+@testset "AUGLAG with gradient-based local optimizer converges" begin
+    # Regression test: the value cache used to leave gradients from the
+    # previous point after gradient-free evaluations, so AUGLAG sub-solves
+    # started with wrong search directions and failed. With the cache
+    # invalidation, AUGLAG + LD_LBFGS converges to the optimum.
+    m = Model(x -> (sqrt(x[2]) + x[1]^2))
+    addvar!(m, [0.0, 0.0], [10.0, 10.0])
+    r = NonconvexCore.optimize(
+        m,
+        NLoptAlg(:AUGLAG, :LD_LBFGS),
+        [0.1, 0.2];
+        options = NLoptOptions(xtol_rel = 1e-6, ftol_rel = 1e-6, maxeval = 1000),
+    )
+    @test abs(r.minimum - 0) < 1e-6
+    @test norm(r.minimizer .- 0) < 1e-6
+end
+
 @testset "Equality constraints" begin
     m = Model(f)
     addvar!(m, [0.0, 0.0], [10.0, 10.0])
