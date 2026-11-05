@@ -221,7 +221,6 @@ function get_nlopt_problem(
     xlb,
     xub,
 )
-    onehot(n, i) = [zeros(i - 1); 1.0; zeros(n - i)]
     local lastx, objval, objgrad
     local ineqconstrval, ineqconstrjac
     if ineq_constr !== nothing
@@ -237,27 +236,44 @@ function get_nlopt_problem(
         if updategrad
             objval, objpb = Zygote.pullback(obj, lastx)
             objgrad = objpb(1.0)[1]
+            objgrad === nothing && (objgrad = zeros(length(lastx)))
         else
             objval = obj(lastx)
+            # Invalidate the cached gradient: it belongs to the previous point,
+            # and NLopt's meta-algorithms (AUGLAG, MLSL) evaluate the objective
+            # and constraints without gradients between sub-solves.
+            objgrad = nothing
         end
         if ineq_constr !== nothing
             if updategrad
                 ineqconstrval, ineqconstrpb = Zygote.pullback(ineq_constr, lastx)
-                ineqconstrjac = mapreduce(vcat, 1:length(ineqconstrval)) do i
-                    ineqconstrpb(onehot(length(ineqconstrval), i))[1]'
+                ineqconstrjac = zeros(length(ineqconstrval), length(lastx))
+                e = zeros(length(ineqconstrval))
+                for i = 1:length(ineqconstrval)
+                    e .= 0
+                    e[i] = 1
+                    row = ineqconstrpb(e)[1]
+                    row === nothing || (ineqconstrjac[i, :] .= row)
                 end
             else
                 ineqconstrval = ineq_constr(lastx)
+                ineqconstrjac = nothing
             end
         end
         if eq_constr !== nothing
             if updategrad
                 eqconstrval, eqconstrpb = Zygote.pullback(eq_constr, lastx)
-                eqconstrjac = mapreduce(vcat, 1:length(eqconstrval)) do i
-                    eqconstrpb(onehot(length(eqconstrval), i))[1]'
+                eqconstrjac = zeros(length(eqconstrval), length(lastx))
+                e = zeros(length(eqconstrval))
+                for i = 1:length(eqconstrval)
+                    e .= 0
+                    e[i] = 1
+                    row = eqconstrpb(e)[1]
+                    row === nothing || (eqconstrjac[i, :] .= row)
                 end
             else
                 eqconstrval = eq_constr(lastx)
+                eqconstrjac = nothing
             end
         end
     end
@@ -266,6 +282,7 @@ function get_nlopt_problem(
     function nlopt_obj(x, grad)
         if x == lastx
             if length(grad) > 0
+                objgrad === nothing && update_cached_values(x, true)
                 grad .= objgrad
             end
             return objval
@@ -276,12 +293,12 @@ function get_nlopt_problem(
             end
             return objval
         end
-        return val
     end
     function nlopt_ineqconstr_gen(i)
         function (x, grad)
             if x == lastx
                 if length(grad) > 0
+                    ineqconstrjac === nothing && update_cached_values(x, true)
                     grad .= ineqconstrjac[i, :]
                 end
                 return ineqconstrval[i]
@@ -298,6 +315,7 @@ function get_nlopt_problem(
         function (x, grad)
             if x == lastx
                 if length(grad) > 0
+                    eqconstrjac === nothing && update_cached_values(x, true)
                     grad .= eqconstrjac[i, :]
                 end
                 return eqconstrval[i]
