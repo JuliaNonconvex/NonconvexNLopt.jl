@@ -43,6 +43,11 @@ end
 @testset "Nested solvers" begin
     m = Model(x -> (sqrt(x[2]) + x[1]^2))
     addvar!(m, [0.0, 0.0], [10.0, 10.0])
+    # Cap the evaluations: MLSL keeps sampling LDS points while the best
+    # objective improves relative to xtol_rel; with the optimum at exactly 0
+    # that criterion may never be satisfied, so the meta-solver must not be
+    # allowed to run unbounded.
+    options = NLoptOptions(xtol_rel = 1e-4, maxeval = 2000)
     for alg in [
         NLoptAlg(:AUGLAG, :LD_LBFGS),
         NLoptAlg(:G_MLSL_LDS, :LD_LBFGS),
