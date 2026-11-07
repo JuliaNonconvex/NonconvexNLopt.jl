@@ -1,5 +1,10 @@
 # NEWS
 
+## 0.1.13
+
+- Documented the `optimize` name conflict with NLopt.jl in the README,
+  including the recommended `import NLopt` usage for callers.
+
 ## 0.1.10
 
 - Fixed invalid stdlib compat bounds (`LinearAlgebra`/`SparseArrays =
