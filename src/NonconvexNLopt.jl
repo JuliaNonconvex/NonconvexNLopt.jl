@@ -108,6 +108,14 @@ struct NLoptAlg{L<:Union{Symbol,Nothing}} <: AbstractOptimizer
 end
 NLoptAlg(alg) = NLoptAlg(alg, nothing)
 
+NonconvexCore.solver_capabilities(::NLoptAlg) = ConstraintCapabilities(
+    eq = true,
+    ineq = true,
+    sd = false,
+    box = true,
+    integer = false,
+)
+
 struct NLoptOptions{N<:NamedTuple}
     nt::N
 end

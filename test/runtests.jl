@@ -142,3 +142,13 @@ end
         @test norm(r.minimizer - [1 / 3, 8 / 27]) < 1e-6
     end
 end
+
+@testset "solver capabilities" begin
+    caps = solver_capabilities(NLoptAlg(:LD_MMA))
+    @test caps isa ConstraintCapabilities
+    @test caps.eq === true
+    @test caps.ineq === true
+    @test caps.sd === false
+    @test caps.box === true
+    @test caps.integer === false
+end
