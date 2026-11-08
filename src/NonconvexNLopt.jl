@@ -48,6 +48,21 @@ const FIRST_ORDER_ALGORITHMS = (
 )
 
 const ALGORITHMS = (ZERO_ORDER_ALGORITHMS..., FIRST_ORDER_ALGORITHMS...)
+
+# Algorithms that require finite bounds on every variable (see
+# JuliaNonconvex/NonconvexCore.jl#33).
+const FINITE_BOUNDS_ALGORITHMS = (
+    :GN_DIRECT,
+    :GN_DIRECT_L,
+    :GNL_DIRECT_NOSCAL,
+    :GN_DIRECT_L_NOSCAL,
+    :GN_DIRECT_L_RAND_NOSCAL,
+    :GN_ORIG_DIRECT,
+    :GN_ORIG_DIRECT_L,
+    :GN_AGS,
+    :GD_STOGO,
+    :GD_STOGO_RAND,
+)
 const ALL_ALGORITHMS = (META_ALGORITHMS..., ALGORITHMS...)
 
 function is_zero_order(algorithm, ::Nothing)
@@ -108,13 +123,16 @@ struct NLoptAlg{L<:Union{Symbol,Nothing}} <: AbstractOptimizer
 end
 NLoptAlg(alg) = NLoptAlg(alg, nothing)
 
-NonconvexCore.solver_capabilities(::NLoptAlg) = ConstraintCapabilities(
-    eq = true,
-    ineq = true,
-    sd = false,
-    box = true,
-    integer = false,
-)
+function NonconvexCore.solver_capabilities(alg::NLoptAlg)
+    return ConstraintCapabilities(;
+        eq = true,
+        ineq = true,
+        sd = false,
+        box = true,
+        integer = false,
+        infinite_bounds = !(alg.algorithm in FINITE_BOUNDS_ALGORITHMS),
+    )
+end
 
 struct NLoptOptions{N<:NamedTuple}
     nt::N

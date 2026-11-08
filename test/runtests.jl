@@ -151,4 +151,9 @@ end
     @test caps.sd === false
     @test caps.box === true
     @test caps.integer === false
+    @test caps.infinite_bounds === true
+    caps = solver_capabilities(NLoptAlg(:GN_DIRECT))
+    @test caps.infinite_bounds === false
+    caps = solver_capabilities(NLoptAlg(:GD_STOGO))
+    @test caps.infinite_bounds === false
 end
