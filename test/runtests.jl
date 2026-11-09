@@ -2,7 +2,7 @@ using NonconvexNLopt, LinearAlgebra, Test
 
 @testset "Algorithm names" begin
     @test_throws ArgumentError(
-        "Algorithm :AU is not a valid algorithm. The valid algorithms are (:G_MLSL, :G_MLSL_LDS, :AUGLAG, :AUGLAG_EQ, :GN_DIRECT, :GN_DIRECT_L, :GNL_DIRECT_NOSCAL, :GN_DIRECT_L_NOSCAL, :GN_DIRECT_L_RAND_NOSCAL, :GN_ORIG_DIRECT, :GN_ORIG_DIRECT_L, :GN_CRS2_LM, :GN_AGS, :GN_ESCH, :LN_COBYLA, :LN_BOBYQA, :LN_NEWUOA, :LN_NEWUOA_BOUND, :LN_PRAXIS, :LN_NELDERMEAD, :LN_SBPLX, :GD_STOGO, :GD_STOGO_RAND, :LD_CCSAQ, :LD_MMA, :LD_SLSQP, :LD_LBFGS, :LD_TNEWTON, :LD_TNEWTON_PRECOND, :LD_TNEWTON_RESTART, :LD_TNEWTON_PRECOND_RESTART, :LD_VAR1, :LD_VAR2).",
+        "Algorithm :AU is not a valid algorithm. The valid algorithms are (:G_MLSL, :G_MLSL_LDS, :AUGLAG, :AUGLAG_EQ, :GN_DIRECT, :GN_DIRECT_L, :GNL_DIRECT_NOSCAL, :GN_DIRECT_L_NOSCAL, :GN_DIRECT_L_RAND_NOSCAL, :GN_ORIG_DIRECT, :GN_ORIG_DIRECT_L, :GN_CRS2_LM, :GN_AGS, :GN_ESCH, :GN_ISRES, :LN_COBYLA, :LN_BOBYQA, :LN_NEWUOA, :LN_NEWUOA_BOUND, :LN_PRAXIS, :LN_NELDERMEAD, :LN_SBPLX, :GD_STOGO, :GD_STOGO_RAND, :LD_CCSAQ, :LD_MMA, :LD_SLSQP, :LD_LBFGS, :LD_TNEWTON, :LD_TNEWTON_PRECOND, :LD_TNEWTON_RESTART, :LD_TNEWTON_PRECOND_RESTART, :LD_VAR1, :LD_VAR2).",
     ) NLoptAlg(:AU)
 
     @test_throws ArgumentError(
@@ -10,7 +10,7 @@ using NonconvexNLopt, LinearAlgebra, Test
     ) NLoptAlg(:AUGLA)
 
     @test_throws ArgumentError(
-        "A meta-algorithm :AUGLAG was input but no local optimizer was specified. Please specify a local algorithm using `NLoptAlg(:AUGLAG, local_algorithm)` where `local_optimizer` is one of the following algorithms: (:GN_DIRECT, :GN_DIRECT_L, :GNL_DIRECT_NOSCAL, :GN_DIRECT_L_NOSCAL, :GN_DIRECT_L_RAND_NOSCAL, :GN_ORIG_DIRECT, :GN_ORIG_DIRECT_L, :GN_CRS2_LM, :GN_AGS, :GN_ESCH, :LN_COBYLA, :LN_BOBYQA, :LN_NEWUOA, :LN_NEWUOA_BOUND, :LN_PRAXIS, :LN_NELDERMEAD, :LN_SBPLX, :GD_STOGO, :GD_STOGO_RAND, :LD_CCSAQ, :LD_MMA, :LD_SLSQP, :LD_LBFGS, :LD_TNEWTON, :LD_TNEWTON_PRECOND, :LD_TNEWTON_RESTART, :LD_TNEWTON_PRECOND_RESTART, :LD_VAR1, :LD_VAR2).",
+        "A meta-algorithm :AUGLAG was input but no local optimizer was specified. Please specify a local algorithm using `NLoptAlg(:AUGLAG, local_algorithm)` where `local_optimizer` is one of the following algorithms: (:GN_DIRECT, :GN_DIRECT_L, :GNL_DIRECT_NOSCAL, :GN_DIRECT_L_NOSCAL, :GN_DIRECT_L_RAND_NOSCAL, :GN_ORIG_DIRECT, :GN_ORIG_DIRECT_L, :GN_CRS2_LM, :GN_AGS, :GN_ESCH, :GN_ISRES, :LN_COBYLA, :LN_BOBYQA, :LN_NEWUOA, :LN_NEWUOA_BOUND, :LN_PRAXIS, :LN_NELDERMEAD, :LN_SBPLX, :GD_STOGO, :GD_STOGO_RAND, :LD_CCSAQ, :LD_MMA, :LD_SLSQP, :LD_LBFGS, :LD_TNEWTON, :LD_TNEWTON_PRECOND, :LD_TNEWTON_RESTART, :LD_TNEWTON_PRECOND_RESTART, :LD_VAR1, :LD_VAR2).",
     ) NLoptAlg(:AUGLAG)
 
     @test_throws ArgumentError(
@@ -144,16 +144,73 @@ end
 end
 
 @testset "solver capabilities" begin
+    # LD_MMA: inequality constraints, no equality, any bounds
     caps = solver_capabilities(NLoptAlg(:LD_MMA))
     @test caps isa ConstraintCapabilities
-    @test caps.eq === true
-    @test caps.ineq === true
-    @test caps.sd === false
+    @test caps.linear_eq === false
+    @test caps.nonlinear_eq === false
+    @test caps.linear_ineq === true
+    @test caps.nonlinear_ineq === true
+    @test caps.linear_sd === false
+    @test caps.nonlinear_sd === false
     @test caps.box === true
+    @test caps.continuous === true
+    @test caps.binary === false
     @test caps.integer === false
     @test caps.infinite_bounds === true
+    # LD_SLSQP: equality + inequality
+    caps = solver_capabilities(NLoptAlg(:LD_SLSQP))
+    @test caps.nonlinear_eq === true
+    @test caps.nonlinear_ineq === true
+    # LN_COBYLA: equality + inequality (equality via inequality pairs)
+    caps = solver_capabilities(NLoptAlg(:LN_COBYLA))
+    @test caps.nonlinear_eq === true
+    @test caps.nonlinear_ineq === true
+    # LN_BOBYQA: bounds only
+    caps = solver_capabilities(NLoptAlg(:LN_BOBYQA))
+    @test caps.nonlinear_eq === false
+    @test caps.nonlinear_ineq === false
+    @test caps.box === true
+    # LN_NEWUOA: unconstrained only, no bound support
+    caps = solver_capabilities(NLoptAlg(:LN_NEWUOA))
+    @test caps.box === false
+    @test caps.infinite_bounds === true
+    # global algorithms require finite bounds
     caps = solver_capabilities(NLoptAlg(:GN_DIRECT))
     @test caps.infinite_bounds === false
+    @test caps.nonlinear_ineq === false
+    caps = solver_capabilities(NLoptAlg(:GN_CRS2_LM))
+    @test caps.infinite_bounds === false
+    caps = solver_capabilities(NLoptAlg(:GN_ESCH))
+    @test caps.infinite_bounds === false
+    caps = solver_capabilities(NLoptAlg(:GN_ISRES))
+    @test caps.infinite_bounds === false
+    @test caps.nonlinear_eq === true
+    @test caps.nonlinear_ineq === true
+    caps = solver_capabilities(NLoptAlg(:GN_ORIG_DIRECT))
+    @test caps.infinite_bounds === false
+    @test caps.nonlinear_ineq === true
+    @test caps.nonlinear_eq === false
+    caps = solver_capabilities(NLoptAlg(:GN_AGS))
+    @test caps.infinite_bounds === false
+    @test caps.nonlinear_ineq === true
+    @test caps.nonlinear_eq === false
+    # meta-algorithms
+    caps = solver_capabilities(NLoptAlg(:AUGLAG, :LD_LBFGS))
+    @test caps.nonlinear_eq === true
+    @test caps.nonlinear_ineq === true
+    @test caps.infinite_bounds === true
+    caps = solver_capabilities(NLoptAlg(:AUGLAG, :GN_DIRECT))
+    @test caps.infinite_bounds === false
+    caps = solver_capabilities(NLoptAlg(:AUGLAG_EQ, :LD_LBFGS))
+    @test caps.nonlinear_eq === true
+    @test caps.nonlinear_ineq === false
+    caps = solver_capabilities(NLoptAlg(:AUGLAG_EQ, :LD_MMA))
+    @test caps.nonlinear_ineq === true
+    caps = solver_capabilities(NLoptAlg(:G_MLSL, :LN_BOBYQA))
+    @test caps.infinite_bounds === false
+    @test caps.nonlinear_eq === false
+    @test caps.nonlinear_ineq === false
     caps = solver_capabilities(NLoptAlg(:GD_STOGO))
     @test caps.infinite_bounds === false
 end

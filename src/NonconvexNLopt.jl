@@ -23,6 +23,7 @@ const ZERO_ORDER_ALGORITHMS = (
     :GN_CRS2_LM,
     :GN_AGS,
     :GN_ESCH,
+    :GN_ISRES,
     :LN_COBYLA,
     :LN_BOBYQA,
     :LN_NEWUOA,
@@ -51,6 +52,8 @@ const ALGORITHMS = (ZERO_ORDER_ALGORITHMS..., FIRST_ORDER_ALGORITHMS...)
 
 # Algorithms that require finite bounds on every variable (see
 # JuliaNonconvex/NonconvexCore.jl#33).
+# Algorithms that require finite bounds on every variable. All of NLopt's
+# global algorithms require bound constraints (NLopt documentation).
 const FINITE_BOUNDS_ALGORITHMS = (
     :GN_DIRECT,
     :GN_DIRECT_L,
@@ -59,10 +62,33 @@ const FINITE_BOUNDS_ALGORITHMS = (
     :GN_DIRECT_L_RAND_NOSCAL,
     :GN_ORIG_DIRECT,
     :GN_ORIG_DIRECT_L,
+    :GN_CRS2_LM,
     :GN_AGS,
+    :GN_ESCH,
+    :GN_ISRES,
     :GD_STOGO,
     :GD_STOGO_RAND,
+    :G_MLSL,
+    :G_MLSL_LDS,
 )
+
+# Algorithms supporting nonlinear inequality constraints (NLopt documentation).
+const INEQUALITY_ALGORITHMS = (
+    :GN_ORIG_DIRECT,
+    :GN_ORIG_DIRECT_L,
+    :GN_AGS,
+    :GN_ISRES,
+    :LN_COBYLA,
+    :LD_MMA,
+    :LD_CCSAQ,
+    :LD_SLSQP,
+)
+
+# Algorithms supporting nonlinear equality constraints (NLopt documentation).
+const EQUALITY_ALGORITHMS = (:GN_ISRES, :LN_COBYLA, :LD_SLSQP)
+
+# Algorithms that support no bound constraints at all (unconstrained only).
+const UNCONSTRAINED_ALGORITHMS = (:LN_NEWUOA,)
 const ALL_ALGORITHMS = (META_ALGORITHMS..., ALGORITHMS...)
 
 function is_zero_order(algorithm, ::Nothing)
@@ -123,15 +149,85 @@ struct NLoptAlg{L<:Union{Symbol,Nothing}} <: AbstractOptimizer
 end
 NLoptAlg(alg) = NLoptAlg(alg, nothing)
 
+# Declare the capabilities per NLopt's algorithm documentation: constraint
+# support differs substantially between algorithms, and all global algorithms
+# require finite bounds.
 function NonconvexCore.solver_capabilities(alg::NLoptAlg)
+    a = alg.algorithm
+    if a in META_ALGORITHMS
+        return _meta_capabilities(alg)
+    end
+    eq = a in EQUALITY_ALGORITHMS
+    ineq = a in INEQUALITY_ALGORITHMS
+    box = !(a in UNCONSTRAINED_ALGORITHMS)
     return ConstraintCapabilities(;
-        eq = true,
-        ineq = true,
-        sd = false,
-        box = true,
+        linear_eq = eq,
+        nonlinear_eq = eq,
+        linear_ineq = ineq,
+        nonlinear_ineq = ineq,
+        linear_sd = false,
+        nonlinear_sd = false,
+        box = box,
+        continuous = true,
+        binary = false,
         integer = false,
-        infinite_bounds = !(alg.algorithm in FINITE_BOUNDS_ALGORITHMS),
+        infinite_bounds = !(a in FINITE_BOUNDS_ALGORITHMS),
     )
+end
+
+function _meta_capabilities(alg::NLoptAlg)
+    a = alg.algorithm
+    loc = alg.local_optimizer
+    if a in (:G_MLSL, :G_MLSL_LDS)
+        # MLSL supports bound-constrained problems only, and requires finite
+        # bounds (NLopt documentation).
+        return ConstraintCapabilities(;
+            linear_eq = false,
+            nonlinear_eq = false,
+            linear_ineq = false,
+            nonlinear_ineq = false,
+            linear_sd = false,
+            nonlinear_sd = false,
+            box = true,
+            continuous = true,
+            binary = false,
+            integer = false,
+            infinite_bounds = false,
+        )
+    elseif a === :AUGLAG
+        # AUGLAG folds inequality and equality constraints into penalties and
+        # passes an unconstrained subproblem to the local optimizer; the
+        # finite-bounds requirement is inherited from the local optimizer.
+        return ConstraintCapabilities(;
+            linear_eq = true,
+            nonlinear_eq = true,
+            linear_ineq = true,
+            nonlinear_ineq = true,
+            linear_sd = false,
+            nonlinear_sd = false,
+            box = true,
+            continuous = true,
+            binary = false,
+            integer = false,
+            infinite_bounds = loc === nothing ? true : !(loc in FINITE_BOUNDS_ALGORITHMS),
+        )
+    else # :AUGLAG_EQ
+        # AUGLAG_EQ penalizes equality constraints only; inequalities are
+        # handled directly by the subsidiary algorithm.
+        return ConstraintCapabilities(;
+            linear_eq = true,
+            nonlinear_eq = true,
+            linear_ineq = loc === nothing ? false : loc in INEQUALITY_ALGORITHMS,
+            nonlinear_ineq = loc === nothing ? false : loc in INEQUALITY_ALGORITHMS,
+            linear_sd = false,
+            nonlinear_sd = false,
+            box = true,
+            continuous = true,
+            binary = false,
+            integer = false,
+            infinite_bounds = loc === nothing ? true : !(loc in FINITE_BOUNDS_ALGORITHMS),
+        )
+    end
 end
 
 struct NLoptOptions{N<:NamedTuple}
