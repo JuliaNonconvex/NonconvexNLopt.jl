@@ -7,8 +7,8 @@ using Reexport, Parameters, SparseArrays, Zygote
 using NonconvexCore: VecModel, AbstractResult
 using NonconvexCore: AbstractOptimizer, CountingFunction
 import NonconvexCore: optimize!, Workspace
-import NLopt
-import StringDistances
+using NLopt: NLopt
+using StringDistances: StringDistances
 
 const META_ALGORITHMS = (:G_MLSL, :G_MLSL_LDS, :AUGLAG, :AUGLAG_EQ)
 
@@ -98,15 +98,12 @@ function is_zero_order(::Any, local_optimizer)
     return is_zero_order(local_optimizer, nothing)
 end
 
-function __check_alg(alg; loc = false)
+function __check_alg(alg; loc=false)
     valid = loc ? ALGORITHMS : ALL_ALGORITHMS
     if !(alg in valid)
-        dists =
-            StringDistances.evaluate.(
-                Ref(StringDistances.Levenshtein()),
-                string(alg),
-                string.(valid),
-            )
+        dists = StringDistances.evaluate.(
+            Ref(StringDistances.Levenshtein()), string(alg), string.(valid)
+        )
         val, ind = findmin(dists)
         sim_alg = Symbol(valid[ind])
         if val < 4
@@ -134,8 +131,8 @@ function _check_alg(alg, loc)
             ),
         )
     end
-    __check_alg(alg, loc = false)
-    loc === nothing || __check_alg(loc, loc = true)
+    __check_alg(alg; loc=false)
+    loc === nothing || __check_alg(loc; loc=true)
     return nothing
 end
 
@@ -161,17 +158,17 @@ function NonconvexCore.solver_capabilities(alg::NLoptAlg)
     ineq = a in INEQUALITY_ALGORITHMS
     box = !(a in UNCONSTRAINED_ALGORITHMS)
     return ConstraintCapabilities(;
-        linear_eq = eq,
-        nonlinear_eq = eq,
-        linear_ineq = ineq,
-        nonlinear_ineq = ineq,
-        linear_sd = false,
-        nonlinear_sd = false,
-        box = box,
-        continuous = true,
-        binary = false,
-        integer = false,
-        infinite_bounds = !(a in FINITE_BOUNDS_ALGORITHMS),
+        linear_eq=eq,
+        nonlinear_eq=eq,
+        linear_ineq=ineq,
+        nonlinear_ineq=ineq,
+        linear_sd=false,
+        nonlinear_sd=false,
+        box=box,
+        continuous=true,
+        binary=false,
+        integer=false,
+        infinite_bounds=(!(a in FINITE_BOUNDS_ALGORITHMS)),
     )
 end
 
@@ -182,50 +179,50 @@ function _meta_capabilities(alg::NLoptAlg)
         # MLSL supports bound-constrained problems only, and requires finite
         # bounds (NLopt documentation).
         return ConstraintCapabilities(;
-            linear_eq = false,
-            nonlinear_eq = false,
-            linear_ineq = false,
-            nonlinear_ineq = false,
-            linear_sd = false,
-            nonlinear_sd = false,
-            box = true,
-            continuous = true,
-            binary = false,
-            integer = false,
-            infinite_bounds = false,
+            linear_eq=false,
+            nonlinear_eq=false,
+            linear_ineq=false,
+            nonlinear_ineq=false,
+            linear_sd=false,
+            nonlinear_sd=false,
+            box=true,
+            continuous=true,
+            binary=false,
+            integer=false,
+            infinite_bounds=false,
         )
     elseif a === :AUGLAG
         # AUGLAG folds inequality and equality constraints into penalties and
         # passes an unconstrained subproblem to the local optimizer; the
         # finite-bounds requirement is inherited from the local optimizer.
         return ConstraintCapabilities(;
-            linear_eq = true,
-            nonlinear_eq = true,
-            linear_ineq = true,
-            nonlinear_ineq = true,
-            linear_sd = false,
-            nonlinear_sd = false,
-            box = true,
-            continuous = true,
-            binary = false,
-            integer = false,
-            infinite_bounds = loc === nothing ? true : !(loc in FINITE_BOUNDS_ALGORITHMS),
+            linear_eq=true,
+            nonlinear_eq=true,
+            linear_ineq=true,
+            nonlinear_ineq=true,
+            linear_sd=false,
+            nonlinear_sd=false,
+            box=true,
+            continuous=true,
+            binary=false,
+            integer=false,
+            infinite_bounds=loc === nothing ? true : !(loc in FINITE_BOUNDS_ALGORITHMS),
         )
     else # :AUGLAG_EQ
         # AUGLAG_EQ penalizes equality constraints only; inequalities are
         # handled directly by the subsidiary algorithm.
         return ConstraintCapabilities(;
-            linear_eq = true,
-            nonlinear_eq = true,
-            linear_ineq = loc === nothing ? false : loc in INEQUALITY_ALGORITHMS,
-            nonlinear_ineq = loc === nothing ? false : loc in INEQUALITY_ALGORITHMS,
-            linear_sd = false,
-            nonlinear_sd = false,
-            box = true,
-            continuous = true,
-            binary = false,
-            integer = false,
-            infinite_bounds = loc === nothing ? true : !(loc in FINITE_BOUNDS_ALGORITHMS),
+            linear_eq=true,
+            nonlinear_eq=true,
+            linear_ineq=loc === nothing ? false : loc in INEQUALITY_ALGORITHMS,
+            nonlinear_ineq=loc === nothing ? false : loc in INEQUALITY_ALGORITHMS,
+            linear_sd=false,
+            nonlinear_sd=false,
+            box=true,
+            continuous=true,
+            binary=false,
+            integer=false,
+            infinite_bounds=loc === nothing ? true : !(loc in FINITE_BOUNDS_ALGORITHMS),
         )
     end
 end
@@ -234,28 +231,22 @@ struct NLoptOptions{N<:NamedTuple}
     nt::N
 end
 function NLoptOptions(;
-    ftol_rel = 1e-6,
-    ftol_abs = 1e-6,
-    xtol_rel = 1e-6,
-    xtol_abs = 1e-6,
-    suboptions = NLoptOptions(NamedTuple()),
+    ftol_rel=1e-6,
+    ftol_abs=1e-6,
+    xtol_rel=1e-6,
+    xtol_abs=1e-6,
+    suboptions=NLoptOptions(NamedTuple()),
     kwargs...,
 )
-    NLoptOptions(
+    return NLoptOptions(
         merge(
-            (; suboptions),
-            NamedTuple(kwargs),
-            (; ftol_rel, ftol_abs, xtol_rel, xtol_abs),
+            (; suboptions), NamedTuple(kwargs), (; ftol_rel, ftol_abs, xtol_rel, xtol_abs)
         ),
     )
 end
 
 mutable struct NLoptWorkspace{
-    M<:VecModel,
-    P,
-    X<:AbstractVector,
-    O<:NLoptOptions,
-    A<:NLoptAlg,
+    M<:VecModel,P,X<:AbstractVector,O<:NLoptOptions,A<:NLoptAlg
 } <: Workspace
     model::M
     problem::P
@@ -267,16 +258,12 @@ end
 function NLoptWorkspace(
     model::VecModel,
     optimizer::NLoptAlg,
-    x0::AbstractVector = getinit(model);
-    options = NLoptOptions(),
+    x0::AbstractVector=getinit(model);
+    options=NLoptOptions(),
     kwargs...,
 )
     problem, counter = get_nlopt_problem(
-        optimizer.algorithm,
-        optimizer.local_optimizer,
-        options,
-        model,
-        copy(x0),
+        optimizer.algorithm, optimizer.local_optimizer, options, model, copy(x0)
     )
     return NLoptWorkspace(model, problem, copy(x0), options, optimizer, counter)
 end
@@ -302,11 +289,7 @@ function Workspace(model::VecModel, optimizer::NLoptAlg, args...; kwargs...)
 end
 
 function get_nlopt_problem(
-    algorithm,
-    local_optimizer,
-    options,
-    model::VecModel,
-    x0::AbstractVector,
+    algorithm, local_optimizer, options, model::VecModel, x0::AbstractVector
 )
     eq = if length(model.eq_constraints.fs) == 0
         nothing
@@ -320,28 +303,12 @@ function get_nlopt_problem(
     end
     obj = CountingFunction(getobjective(model))
     return get_nlopt_problem(
-        algorithm,
-        local_optimizer,
-        options,
-        obj,
-        ineq,
-        eq,
-        x0,
-        getmin(model),
-        getmax(model),
+        algorithm, local_optimizer, options, obj, ineq, eq, x0, getmin(model), getmax(model)
     ),
     obj.counter
 end
 function get_nlopt_problem(
-    algorithm,
-    local_optimizer,
-    options,
-    obj,
-    ineq_constr,
-    eq_constr,
-    x0,
-    xlb,
-    xub,
+    algorithm, local_optimizer, options, obj, ineq_constr, eq_constr, x0, xlb, xub
 )
     local lastx, objval, objgrad
     local ineqconstrval, ineqconstrjac
@@ -353,7 +320,7 @@ function get_nlopt_problem(
         eqconstrval, eqconstrjac = nothing, nothing
     end
 
-    function update_cached_values(x, updategrad = true)
+    function update_cached_values(x, updategrad=true)
         lastx = copy(x)
         if updategrad
             objval, objpb = Zygote.pullback(obj, lastx)
@@ -371,7 +338,7 @@ function get_nlopt_problem(
                 ineqconstrval, ineqconstrpb = Zygote.pullback(ineq_constr, lastx)
                 ineqconstrjac = zeros(length(ineqconstrval), length(lastx))
                 e = zeros(length(ineqconstrval))
-                for i = 1:length(ineqconstrval)
+                for i in 1:length(ineqconstrval)
                     e .= 0
                     e[i] = 1
                     row = ineqconstrpb(e)[1]
@@ -387,7 +354,7 @@ function get_nlopt_problem(
                 eqconstrval, eqconstrpb = Zygote.pullback(eq_constr, lastx)
                 eqconstrjac = zeros(length(eqconstrval), length(lastx))
                 e = zeros(length(eqconstrval))
-                for i = 1:length(eqconstrval)
+                for i in 1:length(eqconstrval)
                     e .= 0
                     e[i] = 1
                     row = eqconstrpb(e)[1]
@@ -471,12 +438,12 @@ function get_nlopt_problem(
     end
 
     if ineq_constr !== nothing
-        for i = 1:length(ineqconstrval)
+        for i in 1:length(ineqconstrval)
             NLopt.inequality_constraint!(problem, nlopt_ineqconstr_gen(i), 0.0)
         end
     end
     if eq_constr !== nothing
-        for i = 1:length(eqconstrval)
+        for i in 1:length(eqconstrval)
             NLopt.equality_constraint!(problem, nlopt_eqconstr_gen(i), 0.0)
         end
     end

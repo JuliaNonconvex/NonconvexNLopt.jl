@@ -6,7 +6,7 @@ using NonconvexNLopt, LinearAlgebra, Test
     ) NLoptAlg(:AU)
 
     @test_throws ArgumentError(
-        "Algorithm :AUGLA is not a valid algorithm. Did you mean :AUGLAG?",
+        "Algorithm :AUGLA is not a valid algorithm. Did you mean :AUGLAG?"
     ) NLoptAlg(:AUGLA)
 
     @test_throws ArgumentError(
@@ -14,7 +14,7 @@ using NonconvexNLopt, LinearAlgebra, Test
     ) NLoptAlg(:AUGLAG)
 
     @test_throws ArgumentError(
-        "Algorithm :AUGLA is not a valid algorithm. Did you mean :AUGLAG?",
+        "Algorithm :AUGLA is not a valid algorithm. Did you mean :AUGLAG?"
     ) NLoptAlg(:AUGLA, :LD_TNEWTON_PRECON)
 
     @test_throws ArgumentError(
@@ -25,7 +25,7 @@ end
 f(x::AbstractVector) = x[2] >= 0 ? sqrt(x[2]) : Inf
 g(x::AbstractVector, a, b) = (a * x[1] + b)^3 - x[2]
 
-options = NLoptOptions(xtol_rel = 1e-4)
+options = NLoptOptions(; xtol_rel=1e-4)
 
 @testset "Simple constraints" begin
     m = Model(f)
@@ -34,7 +34,7 @@ options = NLoptOptions(xtol_rel = 1e-4)
     add_ineq_constraint!(m, x -> g(x, -1, 1))
 
     alg = NLoptAlg(:LD_MMA)
-    r = NonconvexCore.optimize(m, alg, [1.234, 2.345], options = options)
+    r = NonconvexCore.optimize(m, alg, [1.234, 2.345], options=options)
     @info "Status: $(r.status)"
     @test abs(r.minimum - sqrt(8 / 27)) < 1e-6
     @test norm(r.minimizer - [1 / 3, 8 / 27]) < 1e-6
@@ -47,7 +47,7 @@ end
     # objective improves relative to xtol_rel; with the optimum at exactly 0
     # that criterion may never be satisfied, so the meta-solver must not be
     # allowed to run unbounded.
-    options = NLoptOptions(xtol_rel = 1e-4, maxeval = 2000)
+    options = NLoptOptions(xtol_rel=1e-4, maxeval=2000)
     for alg in [
         NLoptAlg(:AUGLAG, :LD_LBFGS),
         NLoptAlg(:G_MLSL_LDS, :LD_LBFGS),
@@ -57,7 +57,7 @@ end
         r = NonconvexCore.optimize(m, alg, [0.1, 0.2]; options)
         @info "Status: $(r.status)"
         @test r.status == :FAILURE ||
-              abs(r.minimum - 0) < 1e-6 && norm(r.minimizer .- 0) < 1e-6
+            abs(r.minimum - 0) < 1e-6 && norm(r.minimizer .- 0) < 1e-6
     end
 end
 
@@ -72,7 +72,7 @@ end
         m,
         NLoptAlg(:AUGLAG, :LD_LBFGS),
         [0.1, 0.2];
-        options = NLoptOptions(xtol_rel = 1e-6, ftol_rel = 1e-6, maxeval = 1000),
+        options=NLoptOptions(xtol_rel=1e-6, ftol_rel=1e-6, maxeval=1000),
     )
     @test abs(r.minimum - 0) < 1e-6
     @test norm(r.minimizer .- 0) < 1e-6
@@ -86,7 +86,7 @@ end
     add_eq_constraint!(m, x -> sum(x) - 1 / 3 - 8 / 27)
 
     alg = NLoptAlg(:LD_SLSQP)
-    r = NonconvexCore.optimize(m, alg, [1.234, 2.345], options = options)
+    r = NonconvexCore.optimize(m, alg, [1.234, 2.345], options=options)
     @info "Status: $(r.status)"
     @test abs(r.minimum - sqrt(8 / 27)) < 1e-6
     @test norm(r.minimizer - [1 / 3, 8 / 27]) < 1e-6
@@ -98,7 +98,7 @@ end
     add_ineq_constraint!(m, FunctionWrapper(x -> [g(x, 2, 0), g(x, -1, 1)], 2))
 
     alg = NLoptAlg(:LD_MMA)
-    r = NonconvexCore.optimize(m, alg, [1.234, 2.345], options = options)
+    r = NonconvexCore.optimize(m, alg, [1.234, 2.345], options=options)
     @info "Status: $(r.status)"
     @test abs(r.minimum - sqrt(8 / 27)) < 1e-6
     @test norm(r.minimizer - [1 / 3, 8 / 27]) < 1e-6
@@ -112,7 +112,7 @@ end
         add_ineq_constraint!(m, x -> g(x, -1, 1))
 
         alg = NLoptAlg(:LD_MMA)
-        r = NonconvexCore.optimize(m, alg, [1.234, 2.345], options = options)
+        r = NonconvexCore.optimize(m, alg, [1.234, 2.345], options=options)
         @info "Status: $(r.status)"
         @test abs(r.minimum - sqrt(8 / 27)) < 1e-6
         @test norm(r.minimizer - [1 / 3, 8 / 27]) < 1e-6
@@ -124,7 +124,7 @@ end
         add_ineq_constraint!(m, x -> g(x, -1, 1))
 
         alg = NLoptAlg(:LD_MMA)
-        r = NonconvexCore.optimize(m, alg, [1.234, 2.345], options = options)
+        r = NonconvexCore.optimize(m, alg, [1.234, 2.345], options=options)
         @info "Status: $(r.status)"
         @test abs(r.minimum - sqrt(8 / 27)) < 1e-6
         @test norm(r.minimizer - [1 / 3, 8 / 27]) < 1e-6
@@ -136,7 +136,7 @@ end
         add_ineq_constraint!(m, x -> g(x, -1, 1))
 
         alg = NLoptAlg(:LD_MMA)
-        r = NonconvexCore.optimize(m, alg, [1.234, 2.345], options = options)
+        r = NonconvexCore.optimize(m, alg, [1.234, 2.345], options=options)
         @info "Status: $(r.status)"
         @test abs(r.minimum - sqrt(8 / 27)) < 1e-6
         @test norm(r.minimizer - [1 / 3, 8 / 27]) < 1e-6
@@ -214,3 +214,5 @@ end
     caps = solver_capabilities(NLoptAlg(:GD_STOGO))
     @test caps.infinite_bounds === false
 end
+
+include("aqua.jl")
