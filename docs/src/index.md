@@ -1,5 +1,7 @@
 # Various optimization algorithms from `NLopt.jl`
 
+![JuliaNonconvex logo](https://raw.githubusercontent.com/JuliaNonconvex/NonconvexNLopt.jl/master/docs/src/assets/logo.png)
+
 ## Description
 
 [NLopt](https://github.com/stevengj/nlopt) is an optimization library with a collection of optimization algorithms implemented. [NLopt.jl](https://github.com/JuliaOpt/NLopt.jl) is the Julia wrapper of `NLopt`. `NonconvexNLopt` allows the use of `NLopt.jl` using the `NLoptAlg` algorithm struct.
