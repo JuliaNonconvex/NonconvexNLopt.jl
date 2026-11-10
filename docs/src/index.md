@@ -49,6 +49,7 @@ All the algorithms available in NLopt are:
 - `:LD_MMA`
 - `:LD_CCSAQ`
 - `:LD_SLSQP`
+- `:LD_LBFGS`
 - `:LD_TNEWTON_PRECOND_RESTART`
 - `:LD_TNEWTON_PRECOND`
 - `:LD_TNEWTON_RESTART`
@@ -59,6 +60,20 @@ All the algorithms available in NLopt are:
 - `:AUGLAG_EQ`
 
 For a description of the above algorithms, please refer to the [algorithms section](https://nlopt.readthedocs.io/en/latest/NLopt_Algorithms/) of NLopt's documentation.
+
+### Meta-algorithms and local optimizers
+
+The meta-algorithms `:AUGLAG`, `:AUGLAG_EQ`, `:G_MLSL` and `:G_MLSL_LDS` are
+not standalone algorithms: they drive a local optimizer on a sequence of
+subproblems. To use one, pass the local algorithm as the second argument of
+the `NLoptAlg` constructor, e.g:
+```julia
+alg = NLoptAlg(:AUGLAG, :LD_LBFGS)
+alg = NLoptAlg(:G_MLSL_LDS, :LD_SLSQP)
+```
+Constructing a meta-algorithm without a local optimizer throws an
+`ArgumentError`. Any of the non-meta algorithms listed above can serve as the
+local optimizer.
 
 ---
 **Disclaimer:**
@@ -73,4 +88,41 @@ The options keyword argument to the `optimize` function shown above must be an i
 ```julia
 options = NLoptOptions(ftol_rel = 1e-4)
 ```
+Any option that NLopt accepts for the chosen algorithm can be passed as a
+keyword argument, for example stopping tolerances and the evaluation budget:
+```julia
+options = NLoptOptions(xtol_rel = 1e-8, maxeval = 10_000)
+```
+The following tolerances have defaults of `1e-6` when not specified:
+
+- `ftol_rel`: relative tolerance on the objective function value
+- `ftol_abs`: absolute tolerance on the objective function value
+- `xtol_rel`: relative tolerance on the decision variables
+- `xtol_abs`: absolute tolerance on the decision variables
+
 All the other options that can be set for each algorithm can be found in the [algorithms section](https://nlopt.readthedocs.io/en/latest/NLopt_Algorithms/) section of NLopt's documentation.
+
+### Options for the local optimizer
+
+When using a meta-algorithm, the options of the local optimizer can be set
+using the `suboptions` keyword argument:
+```julia
+options = NLoptOptions(
+    ftol_rel = 1e-4,
+    suboptions = NLoptOptions(xtol_rel = 1e-8),
+)
+```
+
+## Result
+
+`optimize` returns an `NLoptResult` with the following fields:
+
+- `minimizer`: the minimizer found by the algorithm
+- `minimum`: the minimum objective function value found
+- `problem`: the underlying `NLopt.Opt` problem, which can be inspected for
+  per-algorithm statistics (see the [NLopt.jl reference](https://nlopt.readthedocs.io/en/latest/NLopt_Reference/))
+- `status`: a `Symbol` describing the convergence status, e.g. `:XTOL_REACHED` or `:FTOL_REACHED`
+- `alg`: the `NLoptAlg` instance used
+- `options`: the `NLoptOptions` instance used
+- `fcalls`: the number of objective function evaluations
+
