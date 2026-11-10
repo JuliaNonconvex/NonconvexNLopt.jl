@@ -2,9 +2,6 @@
   <img src="assets/logo.png" width="400" alt="NonconvexNLopt.jl logo">
 </p>
 
-# NonconvexNLopt
-
-
 [![Documentation (stable)](https://img.shields.io/badge/docs-stable-blue.svg)](https://julianonconvex.github.io/NonconvexNLopt.jl/stable)
 [![Documentation (dev)](https://img.shields.io/badge/docs-dev-blue.svg)](https://julianonconvex.github.io/NonconvexNLopt.jl/dev)
 [![Build Status](https://github.com/JuliaNonconvex/NonconvexNLopt.jl/actions/workflows/CI.yml/badge.svg?branch=master)](https://github.com/JuliaNonconvex/NonconvexNLopt.jl/actions)
@@ -13,21 +10,31 @@
 [![Code Style: Blue](https://img.shields.io/badge/code%20style-Blue-4473c9.svg)](https://github.com/invenia/BlueStyle)
 [![JET](https://img.shields.io/badge/%F0%9F%9B%A9%EF%B8%8F_tested_with-JET.jl-233f9a)](https://github.com/aviatesk/JET.jl)
 
-## Name conflicts
+# NonconvexNLopt.jl
 
-`NonconvexNLopt` reexports `optimize` from `NonconvexCore`, and
-[`NLopt.jl`](https://github.com/JuliaOpt/NLopt.jl) also exports a function
-named `optimize`. If both packages are loaded with `using`, the name
-`optimize` becomes ambiguous (Julia prints a warning and leaves it
-undefined) or resolves to the wrong package. To avoid this, load at least
-one of the two packages with `import`:
+The NLopt algorithm zoo
+
+Local and global derivative-free and gradient-based algorithms, plus meta-algorithms with pluggable local optimizers.
+
+NonconvexNLopt.jl is part of the [JuliaNonconvex](https://github.com/JuliaNonconvex) ecosystem built on [NonconvexCore.jl](https://github.com/JuliaNonconvex/NonconvexCore.jl).
+
+## Quick start
 
 ```julia
-import NLopt
 using NonconvexNLopt
 
-# NLopt.optimize and NonconvexNLopt.optimize stay unambiguous.
+alg = NLoptAlg(:LD_SLSQP)
+options = NLoptOptions()
+result = optimize(model, alg, x0, options = options)
 ```
 
-Alternatively, call the functions qualified: `NonconvexNLopt.optimize(...)`
-and `NLopt.optimize(...)`.
+## Documentation
+
+The full documentation is available at [https://julianonconvex.github.io/NonconvexNLopt.jl/stable](https://julianonconvex.github.io/NonconvexNLopt.jl/stable) (stable) and [https://julianonconvex.github.io/NonconvexNLopt.jl/dev](https://julianonconvex.github.io/NonconvexNLopt.jl/dev) (development).
+
+## Installation
+
+```julia
+using Pkg
+Pkg.add("NonconvexNLopt")
+```
