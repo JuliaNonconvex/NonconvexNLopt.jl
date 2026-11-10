@@ -1,7 +1,7 @@
 name = "NonconvexNLopt"
 uuid = "b43a31b8-ff9b-442d-8e31-c163daa8ab75"
 authors = ["Mohamed Tarek <mohdibntarek@gmail.com> and contributors"]
-version = "0.1.13"
+version = "0.2.0"
 
 [deps]
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
@@ -14,9 +14,12 @@ StringDistances = "88034a9c-02f8-509d-84a9-84ec65e18404"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [compat]
+Test = "1"
+TestItemRunner = "0.1, 0.2, 1"
+TestItems = "0.1, 1"
 LinearAlgebra = "1"
 NLopt = "0.6, 1"
-NonconvexCore = "1.5"
+NonconvexCore = "2"
 Parameters = "0.12, 0.13"
 Reexport = "1"
 SparseArrays = "1"
@@ -26,6 +29,8 @@ julia = "1.10"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+TestItemRunner = "f8b46487-2199-4994-9208-9a1283c18c0a"
+TestItems = "1c621080-faea-4a02-84b6-bbd5e436b8fe"
 
 [targets]
-test = ["Test"]
+test = ["Test", "TestItemRunner", "TestItems"]

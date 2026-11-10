@@ -1,0 +1,11 @@
+name = "NLopt"
+modules = ["NonconvexNLopt"]
+doctest_setup = "using NonconvexNLopt"
+
+[[pages]]
+title = "NLopt"
+file = "index.md"
+
+[[pages]]
+title = "Docstrings"
+file = "docstrings.md"
