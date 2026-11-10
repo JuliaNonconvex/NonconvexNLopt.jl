@@ -14,9 +14,9 @@ StringDistances = "88034a9c-02f8-509d-84a9-84ec65e18404"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [compat]
-Aqua = "0.8, 0.9"
-JET = "0.9, 0.10, 0.11, 0.12, 0.13"
 Test = "1"
+TestItemRunner = "0.1, 0.2, 1"
+TestItems = "0.1, 1"
 LinearAlgebra = "1"
 NLopt = "0.6, 1"
 NonconvexCore = "2"
@@ -28,9 +28,9 @@ Zygote = "0.6"
 julia = "1.10"
 
 [extras]
-Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
-JET = "c3a54625-cd67-489e-a8e7-0a5a0ff4e31b"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+TestItemRunner = "f8b46487-2199-4994-9208-9a1283c18c0a"
+TestItems = "1c621080-faea-4a02-84b6-bbd5e436b8fe"
 
 [targets]
-test = ["Test", "Aqua", "JET"]
+test = ["Test", "TestItemRunner", "TestItems"]

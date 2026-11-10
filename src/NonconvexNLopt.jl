@@ -141,7 +141,10 @@ struct NLoptAlg{L<:Union{Symbol,Nothing}} <: AbstractOptimizer
     local_optimizer::L
     function NLoptAlg(alg::Symbol, loc::Union{Symbol,Nothing})
         _check_alg(alg, loc)
-        return new{typeof(loc)}(alg, loc)
+        if loc === nothing
+            return new{Nothing}(alg, nothing)
+        end
+        return new{Symbol}(alg, loc)
     end
 end
 NLoptAlg(alg) = NLoptAlg(alg, nothing)
@@ -258,7 +261,7 @@ end
 function NLoptWorkspace(
     model::VecModel,
     optimizer::NLoptAlg,
-    x0::AbstractVector=getinit(model);
+    x0::AbstractVector=NonconvexCore.getinit(model);
     options=NLoptOptions(),
     kwargs...,
 )
@@ -301,7 +304,9 @@ function get_nlopt_problem(
     else
         model.ineq_constraints
     end
-    obj = CountingFunction(getobjective(model))
+    obj = getobjective(model)
+    obj === nothing && throw(ArgumentError("The model has no objective."))
+    obj = CountingFunction(obj)
     return get_nlopt_problem(
         algorithm, local_optimizer, options, obj, ineq, eq, x0, getmin(model), getmax(model)
     ),

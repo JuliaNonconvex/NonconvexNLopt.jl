@@ -1,4 +1,4 @@
-using JET, NonconvexNLopt
-
-# Run JET analysis on the package.
-JET.test_package(NonconvexNLopt; target_modules=(NonconvexNLopt,))
+@testitem "JET" begin
+    using JET, NonconvexNLopt
+    JET.test_package(NonconvexNLopt; target_modules=(NonconvexNLopt,))
+end
