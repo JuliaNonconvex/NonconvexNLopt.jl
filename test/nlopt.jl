@@ -243,3 +243,40 @@ end
     caps = solver_capabilities(NLoptAlg(:GD_STOGO))
     @test caps.infinite_bounds === false
 end
+
+@testitem "Zero-gradient fallback warns" begin
+    using NonconvexNLopt, LinearAlgebra, Test
+
+    # Regression test: when Zygote cannot differentiate the objective (here a
+    # mutation through a Ref), the pullback returns `nothing` and the solver
+    # used to silently substitute a zero gradient, so gradient-based
+    # algorithms terminated at the start point and reported success without
+    # any warning. The solve must warn about the substitution instead.
+    f(x::AbstractVector) = (r=Ref(x[1]); r[]=5.0; r[]^2)
+    m = Model(f)
+    addvar!(m, [-1.0, -1.0], [1.0, 1.0])
+    r = @test_logs (:warn, r"zero gradient") match_mode = :any NonconvexCore.optimize(
+        m, NLoptAlg(:LD_LBFGS), [0.5, 0.5]; options=NLoptOptions(maxeval=100)
+    )
+    @test isfinite(r.minimum)
+    @test r.minimum ≈ 25.0
+end
+
+@testitem "Callback kwarg is dropped with a warning" begin
+    using NonconvexNLopt, LinearAlgebra, Test
+
+    # Regression test: the `callback` keyword argument used to be silently
+    # ignored by NLoptWorkspace. Passing it must emit a warning instead of
+    # failing silently, and the solve itself must still succeed.
+    m = Model(x -> sum(abs2, x))
+    addvar!(m, [-2.0, -2.0], [2.0, 2.0])
+    r = @test_logs (:warn, r"callback") match_mode = :any NonconvexCore.optimize(
+        m,
+        NLoptAlg(:LD_LBFGS),
+        [1.0, 1.0];
+        options=NLoptOptions(maxeval=100),
+        callback=s -> nothing,
+    )
+    @test r.minimum < 1e-6
+    @test norm(r.minimizer) < 1e-6
+end
