@@ -265,6 +265,11 @@ function NLoptWorkspace(
     options=NLoptOptions(),
     kwargs...,
 )
+    if haskey(kwargs, :callback)
+        # NLopt does not expose per-iteration callbacks through this wrapper;
+        # warn instead of silently ignoring the keyword argument.
+        @warn "The `callback` keyword argument is not supported by NonconvexNLopt and is ignored. Remove the `callback` argument to silence this warning."
+    end
     problem, counter = get_nlopt_problem(
         optimizer.algorithm, optimizer.local_optimizer, options, model, copy(x0)
     )
@@ -325,12 +330,24 @@ function get_nlopt_problem(
         eqconstrval, eqconstrjac = nothing, nothing
     end
 
+    warned_zero_gradient = Ref(false)
     function update_cached_values(x, updategrad=true)
         lastx = copy(x)
         if updategrad
             objval, objpb = Zygote.pullback(obj, lastx)
             objgrad = objpb(1.0)[1]
-            objgrad === nothing && (objgrad = zeros(length(lastx)))
+            if objgrad === nothing
+                # Zygote cannot differentiate the objective (e.g. because it
+                # mutates state or has non-differentiable branches). A zero
+                # gradient is substituted so the solve can proceed, but warn
+                # once: gradient-based algorithms would otherwise terminate at
+                # the current point and report success without any signal.
+                if !warned_zero_gradient[]
+                    @warn "Zygote could not differentiate the objective function, so a zero gradient is substituted. Gradient-based algorithms may terminate at the current point without making progress. Consider a gradient-free algorithm or a differentiable reformulation of the objective."
+                    warned_zero_gradient[] = true
+                end
+                objgrad = zeros(length(lastx))
+            end
         else
             objval = obj(lastx)
             # Invalidate the cached gradient: it belongs to the previous point,
