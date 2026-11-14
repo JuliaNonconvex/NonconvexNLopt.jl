@@ -136,6 +136,31 @@ function _check_alg(alg, loc)
     return nothing
 end
 
+"""
+    NLoptAlg(algorithm::Symbol, local_optimizer=nothing)
+    NLoptAlg(algorithm::String, local_optimizer=nothing)
+
+The [NLopt](https://nlopt.readthedocs.io/) optimization library wrapped for
+the Nonconvex interface. The `algorithm` must be one of NLopt's algorithm
+names, e.g. `:LD_MMA`, `:LD_SLSQP`, `:LN_COBYLA`, `:GN_DIRECT`, `:GN_ISRES`
+(many of these are also available in Nonconvex.jl's `@load` names table), and
+the meta-algorithms `:G_MLSL`, `:G_MLSL_LDS`, `:AUGLAG` and `:AUGLAG_EQ`
+additionally require a `local_optimizer` (a plain algorithm symbol) to solve
+the subproblems. Different algorithms support different constraint types —
+see the Nonconvex.jl algorithms overview table and the `solver_capabilities`
+declaration for the selected algorithm. Most of the global algorithms
+require finite bounds on every variable.
+
+## Examples
+
+```julia
+alg = NLoptAlg(:LD_MMA)          # gradient-based MMA
+alg = NLoptAlg(:LN_COBYLA)       # derivative-free
+alg = NLoptAlg(:AUGLAG, :LD_LBFGS)  # augmented Lagrangian with a local solver
+```
+
+Options are set through [`NLoptOptions`](@ref).
+"""
 struct NLoptAlg{L<:Union{Symbol,Nothing}} <: AbstractOptimizer
     algorithm::Symbol
     local_optimizer::L
@@ -230,6 +255,22 @@ function _meta_capabilities(alg::NLoptAlg)
     end
 end
 
+"""
+    NLoptOptions(; ftol_rel=1e-6, ftol_abs=1e-6, xtol_rel=1e-6, xtol_abs=1e-6,
+                 suboptions=NLoptOptions(NamedTuple()), kwargs...)
+
+Options for [`NLoptAlg`](@ref), passed to `optimize` as `options = ...`.
+The stopping tolerances are:
+
+- `ftol_rel`, `ftol_abs`: relative and absolute tolerances on the function value;
+- `xtol_rel`, `xtol_abs`: relative and absolute tolerances on the design variables;
+- `suboptions`: an `NLoptOptions` applied to the local optimizer of a
+  meta-algorithm.
+
+All remaining keyword arguments are forwarded to NLopt's `Opt` constructor
+(stop criteria, max evaluations, vector storage, etc.); see the
+[NLopt reference](https://nlopt.readthedocs.io/en/latest/NLopt_Reference/).
+"""
 struct NLoptOptions{N<:NamedTuple}
     nt::N
 end
