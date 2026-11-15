@@ -1,5 +1,10 @@
 # NEWS
 
+## 0.2.4
+
+- Added docstrings for `NLoptAlg` and `NLoptOptions` (REPL help and API reference).
+
+
 ## 0.2.3
 
 - Warn on the zero-gradient fallback and handle the callback keyword;
