@@ -1,5 +1,8 @@
 # NEWS
 
+## 0.2.5
+
+- The no-`x0` `optimize` tests run unconditionally (they were silently dead behind an always-false `isdefined` guard).
 ## 0.2.4
 
 - Added docstrings for `NLoptAlg` and `NLoptOptions` (REPL help and API reference).
