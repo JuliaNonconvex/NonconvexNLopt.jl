@@ -689,16 +689,10 @@ end
     @test norm(r.minimizer) < 1e-6
 
     # --- optimize without an explicit initial point (getinit default) ---
-    # The default argument `x0 = getinit(model)` in `NLoptWorkspace` relies on
-    # `getinit` being in scope inside NonconvexNLopt; on NonconvexCore 2.0.0
-    # it is not reexported, so this path currently raises UndefVarError. Run
-    # the check only once the binding exists (and report the finding).
-    if isdefined(NonconvexNLopt, :getinit)
-        m_init = Model(x -> sum(x .^ 2))
-        addvar!(m_init, [-2.0, -2.0], [2.0, 2.0]; init=[0.9, 0.9])
-        r_init = NonconvexCore.optimize(m_init, NLoptAlg(:LD_LBFGS); options=options)
-        @test abs(r_init.minimum) < 1e-6
-    end
+    m_init = Model(x -> sum(x .^ 2))
+    addvar!(m_init, [-2.0, -2.0], [2.0, 2.0]; init=[0.9, 0.9])
+    r_init = NonconvexCore.optimize(m_init, NLoptAlg(:LD_LBFGS); options=options)
+    @test abs(r_init.minimum) < 1e-6
 
     # --- Workspace construction and reuse: the counter resets per run ---
     vm, vx0, _ = NonconvexCore.tovecmodel(m, [5.0, 5.0])
@@ -716,15 +710,12 @@ end
     @test r2.fcalls >= 1
     @test r2.minimum < 1e-6
 
-    # Direct NLoptWorkspace construction, default initial point (same guard as
-    # above: the default argument needs `getinit` in NonconvexNLopt's scope).
-    if isdefined(NonconvexNLopt, :getinit)
-        ws2 = NonconvexNLopt.NLoptWorkspace(
-            NonconvexCore.tovecmodel(m_init)[1], alg; options=options
-        )
-        @test ws2.x0 == [0.9, 0.9]
-        @test ws2.counter[] == 1 # initial cached evaluation
-    end
+    # Direct NLoptWorkspace construction, default initial point.
+    ws2 = NonconvexNLopt.NLoptWorkspace(
+        NonconvexCore.tovecmodel(m_init)[1], alg; options=options
+    )
+    @test ws2.x0 == [0.9, 0.9]
+    @test ws2.counter[] == 1 # initial cached evaluation
 
     # --- zero-order algorithm (initial cache update without gradients) ---
     r_zo = NonconvexCore.optimize(
