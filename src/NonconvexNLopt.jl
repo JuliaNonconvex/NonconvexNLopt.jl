@@ -376,8 +376,7 @@ function get_nlopt_problem(
     function update_cached_values(x, updategrad=true)
         lastx = copy(x)
         if updategrad
-            objval = obj(lastx)
-            objgrad = value_gradient(obj, lastx)[2]
+            objval, objgrad = value_gradient(obj, lastx)
             if objgrad === nothing
                 # The AD backend cannot differentiate the objective (e.g.
                 # because it mutates state or has non-differentiable
