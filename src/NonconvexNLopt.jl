@@ -2,10 +2,11 @@ module NonconvexNLopt
 
 export NLoptAlg, NLoptOptions
 
-using Reexport, Parameters, SparseArrays, Zygote
+using Reexport, Parameters, SparseArrays
 @reexport using NonconvexCore
 using NonconvexCore: VecModel, AbstractResult
 using NonconvexCore: AbstractOptimizer, CountingFunction
+using NonconvexCore: value_gradient, value_jacobian
 import NonconvexCore: optimize!, Workspace
 using NLopt: NLopt
 using StringDistances: StringDistances
@@ -375,16 +376,17 @@ function get_nlopt_problem(
     function update_cached_values(x, updategrad=true)
         lastx = copy(x)
         if updategrad
-            objval, objpb = Zygote.pullback(obj, lastx)
-            objgrad = objpb(1.0)[1]
+            objval = obj(lastx)
+            objgrad = value_gradient(obj, lastx)[2]
             if objgrad === nothing
-                # Zygote cannot differentiate the objective (e.g. because it
-                # mutates state or has non-differentiable branches). A zero
-                # gradient is substituted so the solve can proceed, but warn
-                # once: gradient-based algorithms would otherwise terminate at
-                # the current point and report success without any signal.
+                # The AD backend cannot differentiate the objective (e.g.
+                # because it mutates state or has non-differentiable
+                # branches). A zero gradient is substituted so the solve can
+                # proceed, but warn once: gradient-based algorithms would
+                # otherwise terminate at the current point and report success
+                # without any signal.
                 if !warned_zero_gradient[]
-                    @warn "Zygote could not differentiate the objective function, so a zero gradient is substituted. Gradient-based algorithms may terminate at the current point without making progress. Consider a gradient-free algorithm or a differentiable reformulation of the objective."
+                    @warn "The AD backend could not differentiate the objective function, so a zero gradient is substituted. Gradient-based algorithms may terminate at the current point without making progress. Consider a gradient-free algorithm or a differentiable reformulation of the objective."
                     warned_zero_gradient[] = true
                 end
                 objgrad = zeros(length(lastx))
@@ -398,15 +400,8 @@ function get_nlopt_problem(
         end
         if ineq_constr !== nothing
             if updategrad
-                ineqconstrval, ineqconstrpb = Zygote.pullback(ineq_constr, lastx)
-                ineqconstrjac = zeros(length(ineqconstrval), length(lastx))
-                e = zeros(length(ineqconstrval))
-                for i in 1:length(ineqconstrval)
-                    e .= 0
-                    e[i] = 1
-                    row = ineqconstrpb(e)[1]
-                    row === nothing || (ineqconstrjac[i, :] .= row)
-                end
+                ineqconstrval, ineqconstrjac = value_jacobian(ineq_constr, lastx)
+                ineqconstrjac === nothing && (ineqconstrjac = zeros(length(ineqconstrval), length(lastx)))
             else
                 ineqconstrval = ineq_constr(lastx)
                 ineqconstrjac = nothing
@@ -414,15 +409,8 @@ function get_nlopt_problem(
         end
         if eq_constr !== nothing
             if updategrad
-                eqconstrval, eqconstrpb = Zygote.pullback(eq_constr, lastx)
-                eqconstrjac = zeros(length(eqconstrval), length(lastx))
-                e = zeros(length(eqconstrval))
-                for i in 1:length(eqconstrval)
-                    e .= 0
-                    e[i] = 1
-                    row = eqconstrpb(e)[1]
-                    row === nothing || (eqconstrjac[i, :] .= row)
-                end
+                eqconstrval, eqconstrjac = value_jacobian(eq_constr, lastx)
+                eqconstrjac === nothing && (eqconstrjac = zeros(length(eqconstrval), length(lastx)))
             else
                 eqconstrval = eq_constr(lastx)
                 eqconstrjac = nothing
