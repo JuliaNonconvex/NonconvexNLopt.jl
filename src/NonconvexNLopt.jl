@@ -400,7 +400,8 @@ function get_nlopt_problem(
         if ineq_constr !== nothing
             if updategrad
                 ineqconstrval, ineqconstrjac = value_jacobian(ineq_constr, lastx)
-                ineqconstrjac === nothing && (ineqconstrjac = zeros(length(ineqconstrval), length(lastx)))
+                ineqconstrjac === nothing &&
+                    (ineqconstrjac = zeros(length(ineqconstrval), length(lastx)))
             else
                 ineqconstrval = ineq_constr(lastx)
                 ineqconstrjac = nothing
@@ -409,7 +410,8 @@ function get_nlopt_problem(
         if eq_constr !== nothing
             if updategrad
                 eqconstrval, eqconstrjac = value_jacobian(eq_constr, lastx)
-                eqconstrjac === nothing && (eqconstrjac = zeros(length(eqconstrval), length(lastx)))
+                eqconstrjac === nothing &&
+                    (eqconstrjac = zeros(length(eqconstrval), length(lastx)))
             else
                 eqconstrval = eq_constr(lastx)
                 eqconstrjac = nothing
