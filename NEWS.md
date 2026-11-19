@@ -1,5 +1,12 @@
 # NEWS
 
+## 0.2.6
+
+- The derivative layer (objective gradient, constraint Jacobians) now goes
+  through `NonconvexCore.value_gradient` / `value_jacobian`: JuMP-converted
+  models pick up the analytic JuMPModel* rrules and the objective is
+  evaluated once per update. The direct Zygote dependency is dropped.
+
 ## 0.2.5
 
 - The no-`x0` `optimize` tests run unconditionally (they were silently dead behind an always-false `isdefined` guard).
