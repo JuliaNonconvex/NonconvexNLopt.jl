@@ -1,6 +1,6 @@
 # Result
 
-`optimize` returns an [`NLoptResult`](@ref) with the following fields:
+`optimize` returns an `NLoptResult` with the following fields:
 
 - `minimizer`: the minimizer found by the algorithm
 - `minimum`: the minimum objective function value found
