@@ -1,5 +1,8 @@
 # NEWS
 
+## 0.2.7
+
+- Docs: package-name section titles and left-aligned logos (no code changes).
 ## 0.2.6
 
 - The derivative layer (objective gradient, constraint Jacobians) now goes
