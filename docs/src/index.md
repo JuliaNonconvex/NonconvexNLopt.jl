@@ -1,4 +1,4 @@
-# Various optimization algorithms from `NLopt.jl`
+# NonconvexNLopt
 
 ![JuliaNonconvex logo](https://raw.githubusercontent.com/JuliaNonconvex/NonconvexNLopt.jl/master/docs/src/assets/logo.png)
 
