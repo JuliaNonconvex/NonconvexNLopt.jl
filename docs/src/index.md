@@ -1,4 +1,4 @@
-# Various optimization algorithms from `NLopt.jl`
+# NonconvexNLopt
 
 ```@raw html
 <p align="center">

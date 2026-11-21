@@ -1,4 +1,4 @@
-name = "NLopt"
+name = "NonconvexNLopt"
 modules = ["NonconvexNLopt"]
 doctest_setup = "using NonconvexNLopt"
 
